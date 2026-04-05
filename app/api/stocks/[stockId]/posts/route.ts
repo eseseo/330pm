@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ANON_COOKIE, anonHash, getOrCreateAnonId } from "@/lib/anon";
 import { MAX_POST_LENGTH, POST_LIMIT_PER_STOCK_PER_DAY } from "@/lib/constants";
+import { containsBlockedKeyword, getClientIp, hitRateLimit, rejectTooFastRequest } from "@/lib/abuse";
 import { localCreatePost } from "@/lib/local-store";
 import { getMarketStatus } from "@/lib/market";
 import { containsUrl } from "@/lib/spam";
@@ -20,17 +21,26 @@ export async function POST(
   const body = (await request.json()) as Body;
   const content = (body.content ?? "").trim();
   const emotionTag = body.emotionTag?.trim() || null;
+  const clientIp = getClientIp(request);
 
   try {
-    if (content.length < 1 || content.length > MAX_POST_LENGTH) {
+    if (rejectTooFastRequest("post:create", clientIp)) {
+      return NextResponse.json({ error: "요청이 너무 빠릅니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
+    }
+
+    if (hitRateLimit({ action: "post:create", ip: clientIp, limit: 3, windowMs: 60 * 1000 })) {
+      return NextResponse.json({ error: "1분에 최대 3번까지만 작성 요청할 수 있습니다." }, { status: 429 });
+    }
+
+    if (content.length < 3 || content.length > MAX_POST_LENGTH) {
       return NextResponse.json(
-        { error: `1자 이상 ${MAX_POST_LENGTH}자 이하로 작성해 주세요.` },
+        { error: `3자 이상 ${MAX_POST_LENGTH}자 이하로 작성해 주세요.` },
         { status: 400 },
       );
     }
 
-    if (containsUrl(content)) {
-      return NextResponse.json({ error: "링크는 입력할 수 없습니다." }, { status: 400 });
+    if (containsUrl(content) || containsBlockedKeyword(content)) {
+      return NextResponse.json({ error: "링크 또는 제한된 단어는 입력할 수 없습니다." }, { status: 400 });
     }
 
     if (emotionTag && !EMOTION_TAGS.includes(emotionTag as (typeof EMOTION_TAGS)[number])) {

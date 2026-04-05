@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ANON_COOKIE, anonHash, getOrCreateAnonId } from "@/lib/anon";
+import { getClientIp, hasEmpathyByIp, hitRateLimit, markEmpathyByIp, rejectTooFastRequest } from "@/lib/abuse";
 import { REACTION_LIMIT_PER_DAY } from "@/lib/constants";
 import { localAddEmpathy } from "@/lib/local-store";
 import { writeSupabase } from "@/lib/supabase";
@@ -9,7 +10,20 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
+  const clientIp = getClientIp(request);
   try {
+    if (rejectTooFastRequest("empathy:add", clientIp)) {
+      return NextResponse.json({ error: "요청이 너무 빠릅니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
+    }
+
+    if (hitRateLimit({ action: "empathy:add", ip: clientIp, limit: 5, windowMs: 10 * 1000 })) {
+      return NextResponse.json({ error: "공감 요청이 너무 많습니다." }, { status: 429 });
+    }
+
+    if (hasEmpathyByIp(clientIp, id)) {
+      return NextResponse.json({ error: "이미 공감한 한줄입니다." }, { status: 409 });
+    }
+
     const { anonId, isNew } = getOrCreateAnonId(request);
     const sessionHash = anonHash(anonId);
     const { client: supabase } = writeSupabase();
@@ -65,6 +79,7 @@ export async function POST(
     }
 
     const response = NextResponse.json({ empathyCount });
+    markEmpathyByIp(clientIp, id);
     if (isNew) {
       response.cookies.set(ANON_COOKIE, anonId, {
         path: "/",
@@ -88,6 +103,7 @@ export async function POST(
       return NextResponse.json({ error: localError }, { status: statusCode });
     }
     const response = NextResponse.json({ empathyCount: local.empathyCount });
+    markEmpathyByIp(clientIp, id);
     if (isNew) {
       response.cookies.set(ANON_COOKIE, anonId, {
         path: "/",
