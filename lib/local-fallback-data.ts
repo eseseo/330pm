@@ -98,21 +98,22 @@ export function fallbackSearchStocks(query: string, market: "ALL" | MarketType) 
     .slice(0, 20);
 }
 
-export function fallbackHomeFeed(marketStatus: Record<MarketType, MarketStatus>, preferredMarket: MarketType): HomeFeed {
-  const hotLines = [...FALLBACK_POSTS].sort((a, b) => bestLineScore(b) - bestLineScore(a) || +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 9);
+export function fallbackHomeFeed(marketStatus: Record<MarketType, MarketStatus>): HomeFeed {
+  const krPosts = FALLBACK_POSTS.filter((post) => post.market_type === "KR");
+  const hotLines = [...krPosts].sort((a, b) => bestLineScore(b) - bestLineScore(a) || +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 9);
   const quoteOfTheDay = hotLines[0] ?? null;
   return {
     quoteOfTheDay,
     topMentionedKR: topMentioned("KR"),
-    topMentionedUS: topMentioned("US"),
+    topMentionedUS: [],
     hotLines,
-    recentlyClosedMarket: preferredMarket,
+    recentlyClosedMarket: "KR",
     quoteDate: quoteOfTheDay?.market_date ?? null,
     quoteIsFallback: true,
     topMentionedKRDate: latestDate("KR"),
-    topMentionedUSDate: latestDate("US"),
+    topMentionedUSDate: null,
     marketSentimentKR: marketSentiment("KR"),
-    marketSentimentUS: marketSentiment("US"),
+    marketSentimentUS: [],
     marketStatus,
   };
 }

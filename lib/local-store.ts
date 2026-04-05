@@ -259,10 +259,9 @@ export async function localAddEmpathy(input: { postId: string; sessionHash: stri
 
 export async function localHomeFeed(
   marketStatus: Record<MarketType, MarketStatus>,
-  preferredMarket: MarketType,
 ): Promise<HomeFeed> {
   const state = await ensureState();
-  const posts = sortPosts(state.posts);
+  const posts = sortPosts(state.posts.filter((post) => post.market_type === "KR"));
   const hotLines = [...posts]
     .sort((a, b) => bestLineScore(b) - bestLineScore(a) || +new Date(b.created_at) - +new Date(a.created_at))
     .slice(0, 9);
@@ -270,15 +269,15 @@ export async function localHomeFeed(
   return {
     quoteOfTheDay,
     topMentionedKR: buildTopMentioned("KR", posts),
-    topMentionedUS: buildTopMentioned("US", posts),
+    topMentionedUS: [],
     hotLines,
-    recentlyClosedMarket: preferredMarket,
+    recentlyClosedMarket: "KR",
     quoteDate: quoteOfTheDay?.market_date ?? null,
     quoteIsFallback: true,
     topMentionedKRDate: latestDate("KR", posts),
-    topMentionedUSDate: latestDate("US", posts),
+    topMentionedUSDate: null,
     marketSentimentKR: buildMarketSentiment(posts, "KR"),
-    marketSentimentUS: buildMarketSentiment(posts, "US"),
+    marketSentimentUS: [],
     marketStatus,
   };
 }

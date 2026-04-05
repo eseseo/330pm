@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fallbackHomeFeed } from "@/lib/local-fallback-data";
-import { getAllMarketStatus, recentlyClosedMarket } from "@/lib/market";
+import { getAllMarketStatus } from "@/lib/market";
 import { SENTIMENT_GROUPS, bestLineScore, sentimentCounts } from "@/lib/scoring";
 import { serviceSupabase } from "@/lib/supabase";
 import { type MarketSentiment, type MarketType, type MentionedStock, type Post, type SentimentTag } from "@/lib/types";
@@ -138,9 +138,9 @@ export async function GET() {
     KR: marketStatus.KR.marketDate,
     US: marketStatus.US.marketDate,
   } satisfies Record<MarketType, string>;
-  const preferredMarket = await recentlyClosedMarket();
+  const preferredMarket: MarketType = "KR";
   const fallback = {
-    ...fallbackHomeFeed(marketStatus, preferredMarket),
+    ...fallbackHomeFeed(marketStatus),
   };
 
   try {
@@ -152,6 +152,7 @@ export async function GET() {
       .select(POST_FIELDS)
       .eq("is_hidden", false)
       .is("deleted_at", null)
+      .eq("market_type", "KR")
       .eq("stock.is_active", true)
       .order("created_at", { ascending: false })
       .gte("created_at", oneDayAgo)
@@ -164,6 +165,7 @@ export async function GET() {
             .select(POST_FIELDS)
             .eq("is_hidden", false)
             .is("deleted_at", null)
+            .eq("market_type", "KR")
             .eq("stock.is_active", true)
             .order("created_at", { ascending: false })
             .limit(300)
@@ -182,20 +184,16 @@ export async function GET() {
     const quoteOfTheDay = pickQuoteOfTheDay(sourcePosts, currentDates, preferredMarket);
     const quoteIsFallback = quoteOfTheDay ? !isCurrentMarketPost(quoteOfTheDay, currentDates) : false;
     const topMentionedKRDate = latestAvailableDate("KR", sourceRows) ?? currentDates.KR;
-    const topMentionedUSDate = latestAvailableDate("US", sourceRows) ?? currentDates.US;
 
     return NextResponse.json({
       quoteOfTheDay,
       topMentionedKR: buildTopMentioned("KR", sourcePosts),
-      topMentionedUS: buildTopMentioned("US", sourcePosts),
       hotLines,
       recentlyClosedMarket: preferredMarket,
       quoteDate: quoteOfTheDay?.market_date ?? null,
       quoteIsFallback,
       topMentionedKRDate,
-      topMentionedUSDate,
       marketSentimentKR: buildMarketSentiment(sourcePosts, "KR"),
-      marketSentimentUS: buildMarketSentiment(sourcePosts, "US"),
       marketStatus,
     });
   } catch {

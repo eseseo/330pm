@@ -330,13 +330,9 @@ export function StockClient({ stockId }: { stockId: string }) {
 
         <div className={`mt-4 rounded-[22px] border px-4 py-4 ${inputStateTone}`}>
           <p className="text-sm font-semibold">
-            {payload.stock.market_type === "KR"
-              ? payload.writeOpen
-                ? "한국장은 15시 30분 이후부터 다음 장 시작 전까지 작성할 수 있습니다."
-                : "장중에는 읽기만 가능하고, 마감 후에만 작성할 수 있습니다."
-              : payload.writeOpen
-                ? "미국장은 마감 후에 작성할 수 있습니다. 미국 종목 가격은 표시하지 않습니다."
-                : "장중에는 읽기만 가능하고, 마감 후에만 작성할 수 있습니다."}
+            {payload.writeOpen
+              ? "한국장은 15시 30분 이후부터 다음 장 시작 전까지 작성할 수 있습니다."
+              : "장중에는 읽기만 가능하고, 마감 후에만 작성할 수 있습니다."}
           </p>
           <p className="mt-2 text-xs opacity-80">{submitHelp}</p>
         </div>

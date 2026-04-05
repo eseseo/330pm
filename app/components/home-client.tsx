@@ -120,8 +120,8 @@ function defaultFeed(): HomeFeed {
       US: {
         marketDate: "",
         isMarketOpen: false,
-        writeOpen: true,
-        stateMessage: "장이 마감됐습니다. 한마디 남겨보세요.",
+        writeOpen: false,
+        stateMessage: "",
         source: "fallback",
       },
     },
@@ -133,7 +133,7 @@ function formatFeedDate(date: string | null) {
 }
 
 function marketLabel(item: SearchItem) {
-  return item.market_type === "KR" ? item.exchange : "US";
+  return item.exchange;
 }
 
 function stockToneMeta(tone: "bullish" | "bearish" | "mixed") {
@@ -152,7 +152,6 @@ function SearchIcon() {
 
 export function HomeClient() {
   const [query, setQuery] = useState("");
-  const [marketFilter, setMarketFilter] = useState<"ALL" | "KR" | "US">("ALL");
   const [searchResult, setSearchResult] = useState<SearchItem[]>([]);
   const [feed, setFeed] = useState<HomeFeed | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -161,17 +160,12 @@ export function HomeClient() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const trendingTop10 = feed?.topMentionedKR ?? [];
-  const trendingUsTop10 = feed?.topMentionedUS ?? [];
   const hotLines = feed?.hotLines ?? [];
   const searchOpen = query.trim().length > 0;
-  const activeMarket = feed?.recentlyClosedMarket ?? "KR";
-  const dominantSentiment =
-    activeMarket === "US" ? feed?.marketSentimentUS?.[0] ?? null : feed?.marketSentimentKR?.[0] ?? null;
-  const totalSentimentLines =
-    (activeMarket === "US" ? feed?.marketSentimentUS : feed?.marketSentimentKR)?.reduce((sum, item) => sum + item.count, 0) ?? 0;
+  const dominantSentiment = feed?.marketSentimentKR?.[0] ?? null;
+  const totalSentimentLines = feed?.marketSentimentKR?.reduce((sum, item) => sum + item.count, 0) ?? 0;
   const krMarketOpen = feed?.marketStatus.KR.isMarketOpen ?? false;
-  const usMarketOpen = feed?.marketStatus.US.isMarketOpen ?? false;
-  const marketOpen = krMarketOpen || usMarketOpen;
+  const marketOpen = krMarketOpen;
 
   useEffect(() => {
     fetch("/api/feed/home", { cache: "no-store" })
@@ -203,7 +197,7 @@ export function HomeClient() {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/stocks/search?q=${encodeURIComponent(query)}&market=${marketFilter}`,
+          `/api/stocks/search?q=${encodeURIComponent(query)}`,
           { signal: controller.signal },
         );
         const payload = await parseJsonSafe<{ items?: SearchItem[] } & ErrorPayload>(res);
@@ -224,7 +218,7 @@ export function HomeClient() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       controller.abort();
     };
-  }, [query, marketFilter]);
+  }, [query]);
 
   const selectedItem = useMemo(() => searchResult[highlightIndex] ?? null, [searchResult, highlightIndex]);
   const countdownLabel = useMemo(() => {
@@ -249,9 +243,7 @@ export function HomeClient() {
             <span className={`rounded-full px-2.5 py-1 text-sm font-semibold ${krMarketOpen ? "bg-slate-100 text-slate-900" : "bg-blue-50 text-blue-700"}`}>
               {countdownLabel}
             </span>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${usMarketOpen ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600"}`}>
-              미국장 {usMarketOpen ? "열림" : "마감"}
-            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">한국장 기준</span>
           </div>
         </div>
 
@@ -264,8 +256,7 @@ export function HomeClient() {
         </p>
 
         <div className="relative mt-6 rounded-[30px] border border-slate-200/80 bg-white p-3 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.28)]">
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px]">
-            <div className="relative">
+          <div className="relative">
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
                 <SearchIcon />
               </span>
@@ -298,21 +289,6 @@ export function HomeClient() {
                 placeholder={HOME_COPY.searchPlaceholder}
                 className="h-[56px] w-full rounded-[22px] border border-slate-200/90 bg-white/95 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-950 focus:ring-4 focus:ring-slate-200"
               />
-            </div>
-            <div className="flex items-center gap-2 rounded-[22px] border border-slate-200 bg-slate-50 p-2">
-              {(["ALL", "KR", "US"] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setMarketFilter(value)}
-                  className={`flex-1 rounded-2xl px-3 py-3 text-xs font-semibold transition ${
-                    marketFilter === value ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-white"
-                  }`}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
           </div>
 
           {searchOpen ? (
@@ -378,7 +354,9 @@ export function HomeClient() {
         </div>
       </header>
 
-      <section className="mt-8 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      {(feed?.quoteOfTheDay?.stock || dominantSentiment) ? (
+        <section className="mt-8 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        {feed?.quoteOfTheDay?.stock ? (
         <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -389,7 +367,6 @@ export function HomeClient() {
             ) : null}
           </div>
 
-          {feed?.quoteOfTheDay?.stock ? (
             <Link
               href={`/stocks/${feed.quoteOfTheDay.stock.id}`}
               className="mt-5 block rounded-[28px] bg-[linear-gradient(160deg,#0b1324,#12213f_58%,#193259)] px-6 py-7 text-white shadow-[0_24px_70px_-40px_rgba(15,23,42,0.8)] transition hover:-translate-y-0.5 hover:shadow-[0_28px_80px_-38px_rgba(15,23,42,0.95)]"
@@ -404,26 +381,20 @@ export function HomeClient() {
               </div>
               <p className="mt-5 text-2xl font-medium leading-10 text-white/95">{feed.quoteOfTheDay.content}</p>
             </Link>
-          ) : feed === null ? (
-            <div className="mt-5 animate-pulse rounded-[24px] bg-slate-100 px-6 py-8 h-32" />
-          ) : (
-            <div className="mt-5 rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-sm leading-7 text-slate-500">
-              아직 대표 한줄이 없습니다.
-            </div>
-          )}
         </article>
+        ) : null}
 
+        {dominantSentiment ? (
         <aside className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">오늘의 분위기</h2>
-            <span className="text-xs text-slate-400">{activeMarket} 기준</span>
+            <span className="text-xs text-slate-400">KR 기준</span>
           </div>
-          {dominantSentiment ? (
             <div className="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">지배적 심리</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">{dominantSentiment.tag}</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-950">{MARKET_SENTIMENT_LABEL[dominantSentiment.tag] ?? dominantSentiment.tag}</p>
                 </div>
                 <p className="text-4xl font-semibold tracking-tight text-slate-950">{dominantSentiment.ratio}%</p>
               </div>
@@ -435,15 +406,14 @@ export function HomeClient() {
               </div>
               <p className="mt-3 text-sm text-slate-500">최근 {totalSentimentLines}개 한줄을 기준으로 집계했습니다.</p>
             </div>
-          ) : (
-            <div className="mt-5 rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-5 py-6 text-sm text-slate-500">
-              분위기를 보여주기엔 아직 한줄이 부족합니다.
-            </div>
-          )}
         </aside>
+        ) : null}
       </section>
+      ) : null}
 
+      {trendingTop10.length > 0 || hotLines.length > 0 ? (
       <section className="mt-4 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        {trendingTop10.length > 0 ? (
         <article className="rounded-[28px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -454,8 +424,7 @@ export function HomeClient() {
             ) : null}
           </div>
           <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-            {trendingTop10.length > 0
-              ? trendingTop10.map((stock, index) => (
+            {trendingTop10.map((stock, index) => (
                   <li key={stock.id}>
                     <Link
                       href={`/stocks/${stock.id}`}
@@ -490,20 +459,12 @@ export function HomeClient() {
                       </div>
                     </Link>
                   </li>
-                ))
-              : feed === null
-                ? [1, 2, 3, 4].map((i) => (
-                    <li key={i} className="animate-pulse rounded-[22px] bg-slate-100 h-16" />
-                  ))
-                : null}
-            {feed !== null && trendingTop10.length === 0 ? (
-              <li className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500 sm:col-span-2">
-                아직 많이 언급된 종목이 없습니다.
-              </li>
-            ) : null}
+                ))}
           </ul>
         </article>
+        ) : null}
 
+        {hotLines.length > 0 ? (
         <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -512,8 +473,7 @@ export function HomeClient() {
             <span className="text-xs text-slate-400">공감 수와 최신순 기준</span>
           </div>
           <div className="mt-5 grid gap-3">
-            {hotLines.length > 0
-              ? hotLines.slice(0, 9).map((post) => (
+            {hotLines.slice(0, 9).map((post) => (
                   <article
                     key={post.id}
                     className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm transition hover:scale-[1.01] hover:bg-white hover:shadow-[0_18px_40px_-28px_rgba(15,23,42,0.4)]"
@@ -542,89 +502,23 @@ export function HomeClient() {
                     </div>
                     <p className="mt-3 text-sm leading-7 text-slate-900">{post.content}</p>
                   </article>
-                ))
-              : feed === null
-                ? [1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse rounded-[24px] bg-slate-100 h-20" />
-                  ))
-                : null}
-            {feed !== null && hotLines.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">
-                아직 뜨는 한줄이 없습니다.
-              </div>
-            ) : null}
+                ))}
           </div>
         </article>
+        ) : null}
       </section>
+      ) : null}
 
-      <section className="mt-6 rounded-[28px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-            {HOME_COPY.trendingTitle} · US
-          </h2>
-          {feed?.topMentionedUSDate ? (
-            <span className="text-xs text-slate-400">{formatFeedDate(feed.topMentionedUSDate)} · 최근 한줄 기준</span>
-          ) : null}
-        </div>
-        <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {trendingUsTop10.length > 0
-            ? trendingUsTop10.map((stock, index) => (
-                <li key={stock.id}>
-                  <Link
-                    href={`/stocks/${stock.id}`}
-                    className={`group relative flex h-full items-center justify-between overflow-hidden rounded-[24px] border px-4 py-4 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.24)] transition hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(15,23,42,0.35)] ${stockToneMeta(stock.sentiment_tone).card}`}
-                  >
-                    <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${stockToneMeta(stock.sentiment_tone).accent}`} />
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex rounded-full bg-slate-950 px-2 py-1 text-[10px] font-semibold text-white">
-                            {index + 1}위
-                          </span>
-                          <p className="text-sm font-semibold text-slate-900">{stock.name}</p>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">{stock.symbol}</p>
-                        <p className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${stockToneMeta(stock.sentiment_tone).chip}`}>
-                          {stockToneMeta(stock.sentiment_tone).label}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="relative text-right">
-                      <p className={`mt-2 text-[2rem] font-semibold leading-none tracking-tight ${stockToneMeta(stock.sentiment_tone).value}`}>
-                        {stock.dominant_ratio}%
-                      </p>
-                      <p className={`mt-1 text-xs font-medium ${stockToneMeta(stock.sentiment_tone).meta}`}>최근 한줄 {stock.line_count}개</p>
-                      <div className="mt-3 ml-auto h-2 w-24 overflow-hidden rounded-full bg-white/70 ring-1 ring-black/5">
-                        <div
-                          className={`h-full rounded-full ${stockToneMeta(stock.sentiment_tone).bar}`}
-                          style={{ width: `${stock.dominant_ratio}%` }}
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              ))
-            : feed === null
-              ? [1, 2, 3].map((i) => <li key={i} className="animate-pulse rounded-[22px] bg-slate-100 h-16" />)
-              : null}
-          {feed !== null && trendingUsTop10.length === 0 ? (
-            <li className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500 sm:col-span-2 xl:col-span-3">
-              아직 많이 언급된 미국 종목이 없습니다.
-            </li>
-          ) : null}
-        </ul>
-      </section>
-
+      {feed?.marketSentimentKR.length ? (
       <section className="mt-8 rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-            {HOME_COPY.sentimentTitle} · {activeMarket}
+            {HOME_COPY.sentimentTitle} · KR
           </h2>
           <span className="text-xs text-slate-400">최근 24시간</span>
         </div>
-        {(activeMarket === "US" ? feed?.marketSentimentUS.length : feed?.marketSentimentKR.length) ? (
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {(activeMarket === "US" ? feed?.marketSentimentUS : feed?.marketSentimentKR)?.map((item) => (
+            {feed.marketSentimentKR.map((item) => (
               <div key={item.tag} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between text-sm font-semibold text-slate-800">
                   <span>{MARKET_SENTIMENT_LABEL[item.tag] ?? item.tag}</span>
@@ -640,18 +534,8 @@ export function HomeClient() {
               </div>
             ))}
           </div>
-        ) : feed === null ? (
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="animate-pulse rounded-2xl bg-slate-100 h-16" />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">
-            분위기를 보여주기엔 아직 한줄이 부족합니다.
-          </div>
-        )}
       </section>
+      ) : null}
     </main>
   );
 }
