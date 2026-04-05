@@ -1,0 +1,12 @@
+{
+  "markets": {
+    "KR": {
+      "closed_dates": [],
+      "early_closes": {}
+    },
+    "US": {
+      "closed_dates": [],
+      "early_closes": {}
+    }
+  }
+}
