@@ -54,7 +54,7 @@ const HOME_COPY = {
   badge: "3:30",
   title: "장마감 한줄 요약",
   subtitle: "짧게 남기고, 장 시간 동안은 읽기만 가능합니다.",
-  searchPlaceholder: "종목명 또는 티커 검색",
+  searchPlaceholder: "한국 종목명 또는 종목코드 검색",
   highlightTitle: "오늘의 한줄",
   trendingTitle: "지금 분위기 종목",
   popularTitle: "지금 뜨는 한줄",
@@ -203,14 +203,14 @@ export function HomeClient() {
         const payload = await parseJsonSafe<{ items?: SearchItem[] } & ErrorPayload>(res);
         if (!res.ok) {
           setSearchResult(payload?.items ?? []);
-          setMessage(payload?.error ?? "검색에 실패했습니다.");
+          setMessage(payload?.error ?? "한국 종목 검색에 실패했습니다.");
           return;
         }
         setSearchResult(payload?.items ?? []);
         setHighlightIndex(0);
         setMessage(null);
       } catch (error) {
-        if ((error as Error).name !== "AbortError") setMessage("검색에 실패했습니다.");
+        if ((error as Error).name !== "AbortError") setMessage("한국 종목 검색에 실패했습니다.");
       }
     }, 280);
 
@@ -346,7 +346,7 @@ export function HomeClient() {
                 </>
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-                  {message ?? "검색 결과가 없습니다."}
+                  {message ?? "일치하는 한국 종목이 없습니다."}
                 </div>
               )}
             </div>

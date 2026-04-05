@@ -130,8 +130,8 @@ export async function POST(
     return response;
   } catch (error) {
     console.error("[stocks/:id/posts] unexpected error", { error });
-    const marketType = stockId.startsWith("us-") ? "US" : "KR";
-    const status = await getMarketStatus(marketType);
+    const marketType: MarketType = "KR";
+    const status = await getMarketStatus("KR");
     if (!status.writeOpen) {
       return NextResponse.json({ error: "장이 열려 있는 동안에는 작성할 수 없습니다." }, { status: 403 });
     }

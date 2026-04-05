@@ -58,7 +58,7 @@ async function parseJsonSafe<T>(res: Response): Promise<T | null> {
 
 function formatClosePrice(stock: Stock) {
   if (stock.last_close == null) return "-";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("ko-KR", {
     style: "currency",
     currency: stock.market_type === "KR" ? "KRW" : "USD",
     maximumFractionDigits: stock.market_type === "KR" ? 0 : 2,

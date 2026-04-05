@@ -108,8 +108,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("[stocks/:id] unexpected error", { error });
-    const marketType = stockId.startsWith("us-") ? "US" : "KR";
-    const status = await getMarketStatus(marketType);
+    const status = await getMarketStatus("KR");
     const local = await localStockPayload(stockId, status);
     if (local) {
       return NextResponse.json(local);

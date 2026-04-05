@@ -3,7 +3,6 @@ import { test, expect } from '@playwright/test';
 test('홈 화면 렌더링', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('body')).toBeVisible();
-  await page.screenshot({ path: 'test-results/home.png', fullPage: true });
 });
 
 test('입력 UI 존재 확인', async ({ page }) => {
@@ -29,4 +28,25 @@ test('콘솔 에러 체크', async ({ page }) => {
   await page.waitForTimeout(1500);
 
   console.log('Errors:', errors);
+});
+
+test('KR 전용 UI 정책 확인', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForTimeout(800);
+
+  await expect(page.getByText('US', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('ALL', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('미국장')).toHaveCount(0);
+  await expect(page.getByText('미국 종목')).toHaveCount(0);
+  await expect(page.locator('input[placeholder="한국 종목명 또는 종목코드 검색"]')).toBeVisible();
+});
+
+test('모바일 390px 레이아웃 확인', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.waitForTimeout(800);
+
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(390);
+  await expect(page.getByText('장마감 한줄 요약')).toBeVisible();
 });
