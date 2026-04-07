@@ -92,7 +92,7 @@ function isUserFacingMessage(message: string | null) {
 
 function LoadingSkeleton() {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 animate-pulse">
+    <main className="mx-auto max-w-[640px] px-4 py-5 sm:px-5 sm:py-6 animate-pulse">
       <div className="mb-4 flex items-center justify-between">
         <div className="h-9 w-20 rounded-xl bg-slate-200" />
         <div className="h-7 w-16 rounded-full bg-slate-200" />
@@ -182,6 +182,14 @@ export function StockClient({ stockId }: { stockId: string }) {
       .finally(() => setLoading(false));
   }, [load]);
 
+  useEffect(() => {
+    if (!payload) return;
+    if (window.location.hash !== "#write-flow") return;
+    const writeSection = document.getElementById("write-flow");
+    writeSection?.scrollIntoView({ block: "start" });
+    textareaRef.current?.focus();
+  }, [payload]);
+
   // Auto-resize textarea on content change
   useEffect(() => {
     const el = textareaRef.current;
@@ -255,7 +263,7 @@ export function StockClient({ stockId }: { stockId: string }) {
 
   if (!payload) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-12 text-sm text-rose-600">
+      <main className="mx-auto max-w-[640px] px-4 py-8 text-sm text-rose-600 sm:px-5">
         데이터를 불러오지 못했습니다. {message}
       </main>
     );
@@ -271,7 +279,7 @@ export function StockClient({ stockId }: { stockId: string }) {
       : "지금 바로 등록할 수 있습니다.";
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-[640px] px-4 py-5 sm:px-5 sm:py-6">
       <div className="mb-4 flex items-center justify-between">
         <Link
           href="/"
@@ -284,7 +292,7 @@ export function StockClient({ stockId }: { stockId: string }) {
         </span>
       </div>
 
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-40px_rgba(15,23,42,0.22)]">
+      <section id="write-flow" className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-40px_rgba(15,23,42,0.22)] scroll-mt-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
@@ -388,7 +396,7 @@ export function StockClient({ stockId }: { stockId: string }) {
         {message ? <p className="mt-3 text-sm text-slate-700">{message}</p> : null}
       </section>
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="mt-6 grid gap-6">
         <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.28)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">대표 한줄</h2>
@@ -406,7 +414,7 @@ export function StockClient({ stockId }: { stockId: string }) {
                     payload.representativePost.emotion_tag}
                 </span>
               ) : null}
-              <p className="mt-4 text-xl leading-9 text-white/95">{payload.representativePost.content}</p>
+              <p className="mt-4 line-clamp-2 text-xl leading-9 text-white/95">{payload.representativePost.content}</p>
             </div>
           ) : (
             <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-6 text-sm text-slate-500">
@@ -488,7 +496,7 @@ export function StockClient({ stockId }: { stockId: string }) {
                       </p>
                     ) : null}
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-900">{post.content}</p>
+                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-900">{post.content}</p>
                 </div>
                 <button
                   type="button"

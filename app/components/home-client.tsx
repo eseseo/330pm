@@ -140,6 +140,10 @@ function stockToneMeta(tone: "bullish" | "bearish" | "mixed") {
   return STOCK_TONE_STYLE[tone];
 }
 
+function stockWriteHref(stockId: string) {
+  return `/stocks/${stockId}#write-flow`;
+}
+
 function SearchIcon() {
   return (
     <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 text-slate-400" aria-hidden="true">
@@ -158,6 +162,7 @@ export function HomeClient() {
   const [highlightIndex, setHighlightIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(() => secondsUntilKrClose());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const trendingTop10 = feed?.topMentionedKR ?? [];
   const hotLines = feed?.hotLines ?? [];
@@ -230,8 +235,8 @@ export function HomeClient() {
   }, [krMarketOpen, secondsLeft]);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <header className="rounded-[32px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,245,252,0.94))] px-5 py-6 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.32)] sm:px-8 sm:py-9">
+    <main className="mx-auto max-w-[640px] px-4 py-5 sm:px-5 sm:py-6">
+      <header className="rounded-[32px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,245,252,0.94))] px-4 py-5 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.32)] sm:px-6 sm:py-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="rounded-full bg-slate-950 px-6 py-2.5 text-xl font-semibold tracking-[0.3em] text-white sm:px-7 sm:text-2xl">
             {HOME_COPY.badge}
@@ -261,6 +266,7 @@ export function HomeClient() {
                 <SearchIcon />
               </span>
               <input
+                ref={searchInputRef}
                 type="text"
                 value={query}
                 onChange={(event) => {
@@ -283,13 +289,22 @@ export function HomeClient() {
                   }
                   if (event.key === "Enter" && selectedItem) {
                     event.preventDefault();
-                    window.location.href = `/stocks/${selectedItem.id}`;
+                    window.location.href = stockWriteHref(selectedItem.id);
                   }
                 }}
                 placeholder={HOME_COPY.searchPlaceholder}
                 className="h-[56px] w-full rounded-[22px] border border-slate-200/90 bg-white/95 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-950 focus:ring-4 focus:ring-slate-200"
               />
           </div>
+
+          <button
+            type="button"
+            onClick={() => searchInputRef.current?.focus()}
+            className="mt-3 flex min-h-[58px] w-full items-center rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 text-left text-sm text-slate-500 transition hover:border-slate-400 hover:bg-white"
+          >
+            <span className="font-semibold text-slate-800">오늘 어떠셨나요?</span>
+            <span className="ml-2 text-slate-500">종목을 검색하고 바로 한줄 남겨보세요.</span>
+          </button>
 
           {searchOpen ? (
             <div className="absolute inset-x-0 top-[calc(100%+12px)] z-20 overflow-hidden rounded-3xl border border-slate-200 bg-white p-2 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.28)]">
@@ -314,7 +329,7 @@ export function HomeClient() {
                     {searchResult.map((stock, index) => (
                       <li key={stock.id}>
                         <Link
-                          href={`/stocks/${stock.id}`}
+                          href={stockWriteHref(stock.id)}
                           className={`group block rounded-2xl border px-4 py-3 transition ${
                             highlightIndex === index
                               ? "border-slate-900 bg-slate-900 text-white shadow-[0_18px_34px_-24px_rgba(15,23,42,0.35)]"
@@ -355,9 +370,9 @@ export function HomeClient() {
       </header>
 
       {(feed?.quoteOfTheDay?.stock || dominantSentiment) ? (
-        <section className="mt-8 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="mt-6 grid gap-4">
         {feed?.quoteOfTheDay?.stock ? (
-        <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+        <article className="min-h-[220px] rounded-[30px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)] sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
               🔥 오늘의 한줄
@@ -368,8 +383,8 @@ export function HomeClient() {
           </div>
 
             <Link
-              href={`/stocks/${feed.quoteOfTheDay.stock.id}`}
-              className="mt-5 block rounded-[28px] bg-[linear-gradient(160deg,#0b1324,#12213f_58%,#193259)] px-6 py-7 text-white shadow-[0_24px_70px_-40px_rgba(15,23,42,0.8)] transition hover:-translate-y-0.5 hover:shadow-[0_28px_80px_-38px_rgba(15,23,42,0.95)]"
+              href={stockWriteHref(feed.quoteOfTheDay.stock.id)}
+              className="mt-5 block min-h-[148px] rounded-[28px] bg-[linear-gradient(160deg,#0b1324,#12213f_58%,#193259)] px-5 py-6 text-white shadow-[0_24px_70px_-40px_rgba(15,23,42,0.8)] transition hover:-translate-y-0.5 hover:shadow-[0_28px_80px_-38px_rgba(15,23,42,0.95)] sm:px-6 sm:py-7"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">
@@ -379,13 +394,13 @@ export function HomeClient() {
                   공감 {feed.quoteOfTheDay.empathy_count}
                 </span>
               </div>
-              <p className="mt-5 text-2xl font-medium leading-10 text-white/95">{feed.quoteOfTheDay.content}</p>
+              <p className="mt-5 line-clamp-2 text-xl font-medium leading-8 text-white/95 sm:text-2xl sm:leading-10">{feed.quoteOfTheDay.content}</p>
             </Link>
         </article>
         ) : null}
 
         {dominantSentiment ? (
-        <aside className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+        <aside className="min-h-[220px] rounded-[30px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)] sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">오늘의 분위기</h2>
             <span className="text-xs text-slate-400">KR 기준</span>
@@ -412,9 +427,9 @@ export function HomeClient() {
       ) : null}
 
       {trendingTop10.length > 0 || hotLines.length > 0 ? (
-      <section className="mt-4 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <section className="mt-4 grid gap-6">
         {trendingTop10.length > 0 ? (
-        <article className="rounded-[28px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+        <article className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)] sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
               {HOME_COPY.trendingTitle} · KR
@@ -427,8 +442,8 @@ export function HomeClient() {
             {trendingTop10.map((stock, index) => (
                   <li key={stock.id}>
                     <Link
-                      href={`/stocks/${stock.id}`}
-                      className={`group relative flex h-full items-center justify-between overflow-hidden rounded-[24px] border px-4 py-4 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.24)] transition hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(15,23,42,0.35)] ${stockToneMeta(stock.sentiment_tone).card}`}
+                      href={stockWriteHref(stock.id)}
+                      className={`group relative flex min-h-[164px] h-full items-center justify-between overflow-hidden rounded-[24px] border px-4 py-4 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.24)] transition hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(15,23,42,0.35)] ${stockToneMeta(stock.sentiment_tone).card}`}
                     >
                       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${stockToneMeta(stock.sentiment_tone).accent}`} />
                       <div className="flex items-center gap-3">
@@ -437,7 +452,7 @@ export function HomeClient() {
                             <span className="inline-flex rounded-full bg-slate-950 px-2 py-1 text-[10px] font-semibold text-white">
                               {index + 1}위
                             </span>
-                            <p className="text-sm font-semibold text-slate-900">{stock.name}</p>
+                            <p className="line-clamp-2 text-sm font-semibold text-slate-900">{stock.name}</p>
                           </div>
                           <p className="mt-1 text-xs text-slate-500">{stock.symbol}</p>
                           <p className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${stockToneMeta(stock.sentiment_tone).chip}`}>
@@ -465,7 +480,7 @@ export function HomeClient() {
         ) : null}
 
         {hotLines.length > 0 ? (
-        <article className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+        <article className="rounded-[30px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)] sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
               {HOME_COPY.popularTitle}
@@ -474,18 +489,16 @@ export function HomeClient() {
           </div>
           <div className="mt-5 grid gap-3">
             {hotLines.slice(0, 9).map((post) => (
-                  <article
+                  <Link
                     key={post.id}
-                    className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm transition hover:scale-[1.01] hover:bg-white hover:shadow-[0_18px_40px_-28px_rgba(15,23,42,0.4)]"
+                    href={post.stock ? stockWriteHref(post.stock.id) : "#"}
+                    className="block min-h-[132px] rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm transition hover:scale-[1.01] hover:bg-white hover:shadow-[0_18px_40px_-28px_rgba(15,23,42,0.4)]"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       {post.stock ? (
-                        <Link
-                          href={`/stocks/${post.stock.id}`}
-                          className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 hover:text-slate-900"
-                        >
+                        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                           {post.stock.name} · {post.stock.symbol}
-                        </Link>
+                        </span>
                       ) : (
                         <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">알 수 없음</span>
                       )}
@@ -500,8 +513,8 @@ export function HomeClient() {
                         <span className="text-xs font-semibold text-slate-600">공감 {post.empathy_count}</span>
                       </div>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-slate-900">{post.content}</p>
-                  </article>
+                    <p className="mt-3 line-clamp-2 text-sm leading-7 text-slate-900">{post.content}</p>
+                  </Link>
                 ))}
           </div>
         </article>
@@ -510,7 +523,7 @@ export function HomeClient() {
       ) : null}
 
       {feed?.marketSentimentKR.length ? (
-      <section className="mt-8 rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)]">
+      <section className="mt-8 rounded-[30px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.35)] sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
             {HOME_COPY.sentimentTitle} · KR

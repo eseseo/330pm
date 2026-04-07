@@ -50,3 +50,16 @@ test('모바일 390px 레이아웃 확인', async ({ page }) => {
   expect(scrollWidth).toBeLessThanOrEqual(390);
   await expect(page.getByText('장마감 한줄 요약')).toBeVisible();
 });
+
+test('홈 카드 클릭 시 글쓰기 흐름으로 이동', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.waitForTimeout(1000);
+
+  const firstCard = page.locator('a[href*="#write-flow"]').first();
+  await expect(firstCard).toBeVisible();
+  await firstCard.click();
+
+  await page.waitForURL(/#write-flow$/);
+  await expect(page.locator('#write-flow')).toBeVisible();
+});
