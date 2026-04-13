@@ -2,7 +2,7 @@
 
 **3:30은 장중에 떠드는 곳이 아니라, 장마감 후 종목에 한마디 남기는 곳입니다.**
 
-한국 투자자를 위한 한국어 기반 웹앱 MVP로, 한국주식/미국주식 종목 페이지에서 마감 후 익명 한마디를 남기고 공감할 수 있습니다.
+한국 투자자를 위한 한국어 기반 웹앱 MVP로, 한국주식 종목 페이지에서 마감 후 익명 한마디를 남기고 공감할 수 있습니다.
 
 ## 구현 범위
 
@@ -93,6 +93,29 @@ python3 scripts/update_market_sessions.py --start 2026-03-21 --days 90
 ```
 
 휴장일/조기폐장 오버라이드는 [market_calendar_overrides.json](/Users/jy/projects/3-30/scripts/market_calendar_overrides.json)에서 관리합니다.
+
+## 일일 샘플 한줄 자동 생성
+
+한국 종목/ETF 기준으로 매일 샘플 한줄 20개를 자동 생성할 수 있습니다.
+
+수동 실행:
+
+```bash
+npm run posts:daily
+```
+
+옵션 예시:
+
+```bash
+python3 scripts/generate_daily_posts.py --date 2026-04-09 --count 20
+python3 scripts/generate_daily_posts.py --dry-run --count 5
+```
+
+GitHub Actions 스케줄 파일은 [.github/workflows/daily-sample-posts.yml](/Users/jy/projects/3-30/.github/workflows/daily-sample-posts.yml) 입니다.
+매일 `16:10 KST`에 실행되며, 아래 GitHub Actions secrets가 필요합니다.
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 형식:
 

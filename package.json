@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "posts:daily": "python3 scripts/generate_daily_posts.py --count 20",
     "sessions:update": "python3 scripts/update_market_sessions.py",
     "qa": "playwright test",
     "qa:headed": "playwright test --headed"
